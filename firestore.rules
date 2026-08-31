@@ -1,0 +1,11 @@
+// Rules dasar untuk MVP: siapa saja yang tahu link web-nya bisa baca & tulis data.
+// Cukup aman untuk internal 10 outlet, TAPI upgrade ke rules dengan login (Firebase Auth)
+// begitu aplikasi ini dipakai lebih luas / datanya makin sensitif.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
