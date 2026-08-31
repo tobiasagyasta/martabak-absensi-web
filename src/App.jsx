@@ -52,6 +52,9 @@ const COLORS = {
   line: "#E7DCC8",
 };
 
+const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || "1234";
+const DASHBOARD_SESSION_KEY = "martabak-dashboard-access";
+
 function compressImage(file, maxWidth = 480, quality = 0.62) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -95,10 +98,15 @@ function fmtJam(d) {
 
 export default function App() {
   const [tab, setTab] = useState("absen");
+  const isDashboardPage = window.location.pathname === "/dashboard";
   const [chefs, setChefs] = useState([]);
   const [absensi, setAbsensi] = useState([]);
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState("");
+  const [dashboardPin, setDashboardPin] = useState("");
+  const [dashboardUnlocked, setDashboardUnlocked] = useState(
+    () => sessionStorage.getItem(DASHBOARD_SESSION_KEY) === "true"
+  );
 
   const [regNama, setRegNama] = useState("");
   const [regHp, setRegHp] = useState("");
@@ -263,6 +271,22 @@ export default function App() {
     XLSX.writeFile(wb, `Absensi_Martabak78_${todayKey}.xlsx`);
   }
 
+  function unlockDashboard(e) {
+    e.preventDefault();
+    if (dashboardPin === DASHBOARD_PIN) {
+      sessionStorage.setItem(DASHBOARD_SESSION_KEY, "true");
+      setDashboardUnlocked(true);
+      setDashboardPin("");
+      return;
+    }
+    setToast("PIN dashboard salah");
+  }
+
+  function lockDashboard() {
+    sessionStorage.removeItem(DASHBOARD_SESSION_KEY);
+    setDashboardUnlocked(false);
+  }
+
   const chefsByOutlet = OUTLETS.map((o) => ({
     outlet: o,
     count: chefs.filter((c) => c.outlet === o).length,
@@ -310,39 +334,42 @@ export default function App() {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 -mt-3">
-        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: COLORS.espressoLight }}>
-          {[
-            { key: "absen", label: "Absen", icon: Camera },
-            { key: "daftar", label: "Daftar Chef", icon: UserPlus },
-            { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-          ].map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-semibold"
-                style={{ background: active ? COLORS.amber : "transparent", color: active ? COLORS.espresso : COLORS.cream }}
-              >
-                <Icon size={16} />
-                {t.label}
-              </button>
-            );
-          })}
+      {!isDashboardPage && (
+        <div className="max-w-md mx-auto px-4 -mt-3">
+          <div className="flex gap-1 p-1 rounded-2xl" style={{ background: COLORS.espressoLight }}>
+            {[
+              { key: "absen", label: "Absen", icon: Camera },
+              { key: "daftar", label: "Daftar Chef", icon: UserPlus },
+            ].map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-semibold"
+                  style={{ background: active ? COLORS.amber : "transparent", color: active ? COLORS.espresso : COLORS.cream }}
+                >
+                  <Icon size={16} />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="max-w-md mx-auto px-4 mt-4">
+      <div className={`${isDashboardPage ? "max-w-3xl" : "max-w-md"} mx-auto px-4 mt-4`}>
         {!ready ? (
           <p className="text-center text-sm" style={{ color: COLORS.muted }}>Menghubungkan ke database...</p>
+        ) : isDashboardPage && !dashboardUnlocked ? (
+          <DashboardGate dashboardPin={dashboardPin} setDashboardPin={setDashboardPin} unlockDashboard={unlockDashboard} />
+        ) : isDashboardPage ? (
+          <DashboardTab {...{ chefs, absensi, filtered, fOutlet, setFOutlet, fTanggal, setFTanggal, exportExcel, hadirHariIni, confirmDelId, setConfirmDelId, deleteRecord, lockDashboard }} />
         ) : tab === "daftar" ? (
           <DaftarTab {...{ regNama, setRegNama, regHp, setRegHp, regOutlet, setRegOutlet, regAlamat, setRegAlamat, handleDaftar, chefs, chefsByOutlet }} />
-        ) : tab === "absen" ? (
-          <AbsenTab {...{ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto, setAbsFoto, absBusy, handleFoto, handleAbsen, fileRef }} />
         ) : (
-          <DashboardTab {...{ chefs, absensi, filtered, fOutlet, setFOutlet, fTanggal, setFTanggal, exportExcel, hadirHariIni, confirmDelId, setConfirmDelId, deleteRecord }} />
+          <AbsenTab {...{ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto, setAbsFoto, absBusy, handleFoto, handleAbsen, fileRef }} />
         )}
       </div>
 
@@ -360,6 +387,46 @@ function Section({ title, eyebrow }) {
     <div className="mb-4">
       {eyebrow && <p className="mono-font uppercase" style={{ color: COLORS.amberDark, fontSize: 11, letterSpacing: 1 }}>{eyebrow}</p>}
       {title && <h2 className="display-font font-bold" style={{ fontSize: 18, color: COLORS.ink }}>{title}</h2>}
+    </div>
+  );
+}
+
+function DashboardGate({ dashboardPin, setDashboardPin, unlockDashboard }) {
+  return (
+    <div className="rounded-3xl p-5 shadow-sm" style={{ background: "white", border: `1px solid ${COLORS.line}` }}>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="rounded-2xl p-3" style={{ background: COLORS.espresso, color: COLORS.cheese }}>
+          <LayoutDashboard size={22} />
+        </div>
+        <div>
+          <p className="mono-font uppercase" style={{ color: COLORS.amberDark, fontSize: 11, letterSpacing: 1 }}>Akses terbatas</p>
+          <h2 className="display-font font-bold" style={{ fontSize: 22, color: COLORS.ink }}>Dashboard Admin</h2>
+        </div>
+      </div>
+      <p className="text-sm mb-4" style={{ color: COLORS.muted }}>
+        Masukkan PIN sementara untuk melihat rekap absensi. Login permanen bisa ditambahkan nanti.
+      </p>
+      <form onSubmit={unlockDashboard} className="space-y-3">
+        <div>
+          <label className="text-xs font-semibold" style={{ color: COLORS.muted }}>PIN Dashboard</label>
+          <input
+            value={dashboardPin}
+            onChange={(e) => setDashboardPin(e.target.value)}
+            type="password"
+            inputMode="numeric"
+            autoComplete="current-password"
+            placeholder="Masukkan PIN"
+            className="w-full mt-1 px-3 py-3 rounded-xl text-sm"
+            style={{ border: `1px solid ${COLORS.line}` }}
+          />
+        </div>
+        <button type="submit" className="w-full py-3 rounded-xl font-semibold text-sm" style={{ background: COLORS.espresso, color: COLORS.cream }}>
+          Masuk Dashboard
+        </button>
+        <a href="/" className="block text-center text-xs font-semibold" style={{ color: COLORS.amberDark }}>
+          Kembali ke halaman absen
+        </a>
+      </form>
     </div>
   );
 }
@@ -465,10 +532,16 @@ function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto
   );
 }
 
-function DashboardTab({ chefs, absensi, filtered, fOutlet, setFOutlet, fTanggal, setFTanggal, exportExcel, hadirHariIni, confirmDelId, setConfirmDelId, deleteRecord }) {
+function DashboardTab({ chefs, absensi, filtered, fOutlet, setFOutlet, fTanggal, setFTanggal, exportExcel, hadirHariIni, confirmDelId, setConfirmDelId, deleteRecord, lockDashboard }) {
   return (
     <div>
-      <Section eyebrow="Ringkasan" title="Dashboard Absensi" />
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <Section eyebrow="Ringkasan" title="Dashboard Absensi" />
+        <div className="flex gap-2">
+          <a href="/" className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap" style={{ border: `1px solid ${COLORS.line}`, color: COLORS.muted, background: "white" }}>Halaman Absen</a>
+          <button onClick={lockDashboard} className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap" style={{ background: COLORS.espresso, color: COLORS.cream }}>Kunci</button>
+        </div>
+      </div>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[{ label: "Chef Terdaftar", val: chefs.length }, { label: "Hadir Hari Ini", val: hadirHariIni }, { label: "Total Catatan", val: absensi.length }].map((s) => (
           <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: COLORS.espresso }}>
