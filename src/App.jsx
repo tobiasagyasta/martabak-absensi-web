@@ -30,6 +30,7 @@ export default function App() {
   const [absTipe, setAbsTipe] = useState("Masuk");
   const [absFoto, setAbsFoto] = useState("");
   const [absBusy, setAbsBusy] = useState(false);
+  const [successRecord, setSuccessRecord] = useState(null);
   const fileRef = useRef(null);
 
   const [fOutlet, setFOutlet] = useState("Semua");
@@ -128,9 +129,15 @@ export default function App() {
 
     const chef = chefs.find((c) => c.id === absChefId);
     if (!chef) return;
+    const alreadySubmittedType = absensiHariIni.some((r) => r.chefId === chef.id && r.tipe === absTipe);
+    if (alreadySubmittedType) {
+      setToast(`Absen ${absTipe} hari ini sudah tercatat`);
+      return;
+    }
+
     const now = new Date();
     try {
-      await addDoc(collection(db, "absensi"), {
+      const attendanceRecord = {
         chefId: chef.id,
         namaChef: chef.nama,
         outlet: chef.outlet,
@@ -140,10 +147,12 @@ export default function App() {
         tipe: absTipe,
         foto: absTipe === "Masuk" ? absFoto : "",
         waktuSort: now.getTime(),
-      });
+      };
+      await addDoc(collection(db, "absensi"), attendanceRecord);
       setAbsFoto("");
       setAbsChefId("");
       if (fileRef.current) fileRef.current.value = "";
+      setSuccessRecord(attendanceRecord);
       setToast(`Absen ${absTipe} tercatat untuk ${chef.nama}`);
     } catch (err) {
       console.error(err);
@@ -187,6 +196,7 @@ export default function App() {
 
   const todayKey = fmtTanggalKey(new Date());
   const hadirHariIni = new Set(absensi.filter((r) => r.tanggalKey === todayKey).map((r) => r.chefId)).size;
+  const absensiHariIni = absensi.filter((r) => r.tanggalKey === todayKey);
   const filtered = absensi
     .filter((r) => (fOutlet === "Semua" ? true : r.outlet === fOutlet))
     .filter((r) => (fTanggal ? r.tanggalKey === fTanggal : true));
@@ -207,7 +217,7 @@ export default function App() {
       ) : tab === "daftar" ? (
         <DaftarTab {...{ regNama, setRegNama, regHp, setRegHp, regOutlet, setRegOutlet, regAlamat, setRegAlamat, handleDaftar, chefs, chefsByOutlet }} />
       ) : (
-        <AbsenTab {...{ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto, setAbsFoto, absBusy, handleFoto, handleAbsen, fileRef }} />
+        <AbsenTab {...{ chefs, absensiHariIni, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto, setAbsFoto, absBusy, handleFoto, handleAbsen, fileRef, successRecord, setSuccessRecord }} />
       )}
     </AppShell>
   );

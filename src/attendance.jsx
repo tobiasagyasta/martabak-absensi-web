@@ -1,4 +1,5 @@
-import { CheckCircle2, ImagePlus, Info, LogIn, LogOut, UserPlus, X } from "lucide-react";
+import { useEffect } from "react";
+import { CheckCircle2, ImagePlus, Info, LogIn, LogOut, PartyPopper, UserPlus, X } from "lucide-react";
 import { COLORS, OUTLETS } from "./constants";
 import { Section } from "./components";
 
@@ -45,11 +46,24 @@ export function DaftarTab({ regNama, setRegNama, regHp, setRegHp, regOutlet, set
   );
 }
 
-export function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto, setAbsFoto, absBusy, handleFoto, handleAbsen, fileRef }) {
+export function AbsenTab({ chefs, absensiHariIni, absChefId, setAbsChefId, absTipe, setAbsTipe, absFoto, setAbsFoto, absBusy, handleFoto, handleAbsen, fileRef, successRecord, setSuccessRecord }) {
   const grouped = OUTLETS.map((o) => ({ outlet: o, list: chefs.filter((c) => c.outlet === o) })).filter((g) => g.list.length > 0);
   const selectedChef = chefs.find((c) => c.id === absChefId);
-  const canSubmit = chefs.length > 0 && !absBusy;
+  const selectedChefToday = selectedChef ? absensiHariIni.filter((r) => r.chefId === selectedChef.id) : [];
+  const selectedChefHasAttendedToday = selectedChefToday.length > 0;
+  const hasMasukToday = selectedChefToday.some((r) => r.tipe === "Masuk");
+  const hasPulangToday = selectedChefToday.some((r) => r.tipe === "Pulang");
+  const selectedTypeCompleted = absTipe === "Masuk" ? hasMasukToday : hasPulangToday;
+  const attendanceCompleteToday = hasMasukToday && hasPulangToday;
+  const canSubmit = chefs.length > 0 && !absBusy && !selectedTypeCompleted && !attendanceCompleteToday;
   const needsPhoto = absTipe === "Masuk";
+
+  useEffect(() => {
+    if (hasMasukToday && !hasPulangToday && absTipe === "Masuk") {
+      setAbsTipe("Pulang");
+      clearFoto();
+    }
+  }, [absChefId, hasMasukToday, hasPulangToday, absTipe]);
 
   function clearFoto() {
     setAbsFoto("");
@@ -74,9 +88,14 @@ export function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, 
               ))}
             </select>
             {selectedChef && (
-              <p className="text-xs mt-2 px-3 py-2 rounded-xl" style={{ color: COLORS.espresso, background: COLORS.cream }}>
-                Outlet: <span className="font-semibold">{selectedChef.outlet}</span>
-              </p>
+              <div className="text-xs mt-2 px-3 py-2 rounded-xl" style={{ color: selectedChefHasAttendedToday ? COLORS.success : COLORS.espresso, background: selectedChefHasAttendedToday ? COLORS.successSoft : COLORS.cream, border: selectedChefHasAttendedToday ? `1px solid ${COLORS.success}` : "none" }}>
+                <p>Outlet: <span className="font-semibold">{selectedChef.outlet}</span></p>
+                {selectedChefHasAttendedToday && (
+                  <p className="font-semibold mt-1">
+                    {attendanceCompleteToday ? "Absensi hari ini sudah lengkap." : `Sudah absen hari ini: ${selectedChefToday.map((r) => r.tipe).join(" + ")}`}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -86,18 +105,26 @@ export function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, 
             {[{ v: "Masuk", icon: LogIn }, { v: "Pulang", icon: LogOut }].map((t) => {
               const Icon = t.icon;
               const active = absTipe === t.v;
+              const completed = t.v === "Masuk" ? hasMasukToday : hasPulangToday;
               return (
                 <button
                   type="button"
                   key={t.v}
+                  disabled={completed}
                   onClick={() => {
+                    if (completed) return;
                     setAbsTipe(t.v);
                     if (t.v === "Pulang") clearFoto();
                   }}
                   className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1"
-                  style={{ background: active ? COLORS.amber : COLORS.cream, color: COLORS.espresso, border: `1px solid ${active ? COLORS.amber : COLORS.line}` }}
+                  style={{
+                    background: completed ? COLORS.success : active ? COLORS.amber : COLORS.cream,
+                    color: completed ? "white" : COLORS.espresso,
+                    border: `1px solid ${completed ? COLORS.success : active ? COLORS.amber : COLORS.line}`,
+                    opacity: completed ? 0.92 : 1,
+                  }}
                 >
-                  <Icon size={14} /> {t.v}
+                  {completed ? <CheckCircle2 size={14} /> : <Icon size={14} />} {t.v}
                 </button>
               );
             })}
@@ -131,10 +158,40 @@ export function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, 
             <span>Absen pulang tidak memerlukan foto. Pastikan nama chef sudah benar sebelum mengirim.</span>
           </div>
         )}
+        {attendanceCompleteToday && (
+          <div className="flex gap-2 rounded-xl p-3 text-xs font-semibold" style={{ background: COLORS.successSoft, color: COLORS.success, border: `1px solid ${COLORS.success}` }}>
+            <CheckCircle2 size={15} className="flex-shrink-0 mt-0.5" />
+            <span>Absensi hari ini sudah lengkap. Tidak perlu absen lagi hari ini.</span>
+          </div>
+        )}
         <button type="submit" disabled={!canSubmit} className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ background: COLORS.espresso, color: COLORS.cream, opacity: canSubmit ? 1 : 0.5 }}>
           <CheckCircle2 size={16} /> Catat Absen {absTipe}
         </button>
       </form>
+      {successRecord && <AttendanceSuccessModal record={successRecord} onClose={() => setSuccessRecord(null)} />}
+    </div>
+  );
+}
+
+function AttendanceSuccessModal({ record, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 px-4 py-6 flex items-center justify-center" style={{ background: "rgba(36, 26, 18, 0.78)" }}>
+      <div className="w-full max-w-sm rounded-3xl p-5 text-center shadow-2xl" style={{ background: "white", border: `1px solid ${COLORS.line}` }}>
+        <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" style={{ background: COLORS.successSoft, color: COLORS.success }}>
+          <PartyPopper size={30} />
+        </div>
+        <p className="mono-font uppercase font-bold" style={{ color: COLORS.success, fontSize: 11, letterSpacing: 1 }}>Absensi berhasil</p>
+        <h2 className="display-font font-bold mt-1" style={{ color: COLORS.ink, fontSize: 24 }}>Selamat!</h2>
+        <p className="text-sm mt-2" style={{ color: COLORS.muted }}>Anda sudah absen {record.tipe.toLowerCase()}.</p>
+        <div className="rounded-2xl p-3 my-4 text-left text-sm" style={{ background: COLORS.successSoft, color: COLORS.success }}>
+          <p className="font-bold">{record.namaChef}</p>
+          <p>{record.outlet}</p>
+          <p className="mono-font text-xs mt-1">{record.tanggal} · {record.jam} WIB</p>
+        </div>
+        <button type="button" onClick={onClose} className="w-full py-3 rounded-xl font-semibold text-sm" style={{ background: COLORS.success, color: "white" }}>
+          OK, saya mengerti
+        </button>
+      </div>
     </div>
   );
 }

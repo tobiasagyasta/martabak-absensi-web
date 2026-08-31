@@ -19,6 +19,8 @@ export const COLORS = {
   cheese: "#F2C94C",
   cream: "#FBF3E7",
   chili: "#B23A24",
+  success: "#1F7A4D",
+  successSoft: "#E5F6EC",
   ink: "#241A12",
   muted: "#8A7A68",
   line: "#E7DCC8",
