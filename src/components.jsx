@@ -1,4 +1,3 @@
-import { ChefHat } from "lucide-react";
 import { COLORS } from "./constants";
 
 export function AppShell({ children, isDashboardPage, toast }) {
@@ -42,16 +41,13 @@ function Header() {
   return (
     <div style={{ background: COLORS.espresso }} className="px-4 pt-6 pb-4">
       <div className="max-w-md mx-auto">
-        <div className="flex items-center gap-2">
-          <div style={{ background: COLORS.amber }} className="rounded-xl p-2 flex items-center justify-center">
-            <ChefHat size={22} color={COLORS.espresso} />
+        <div className="flex items-center gap-3">
+          <div className="w-28 h-14 rounded-2xl overflow-hidden flex-shrink-0" style={{ background: COLORS.cream, border: `2px solid ${COLORS.amber}` }}>
+            <img src="/mp78-logo.jpeg" alt="Martabak Pecenongan 78" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="display-font font-bold uppercase leading-none" style={{ color: COLORS.cream, fontSize: 18, letterSpacing: 0.5 }}>
-              Martabak Pecenongan 78
-            </h1>
-            <p className="mono-font" style={{ color: COLORS.amber, fontSize: 11, marginTop: 3 }}>
-              sistem absensi dapur · 10 outlet
+            <p className="mono-font uppercase font-semibold" style={{ color: COLORS.amber, fontSize: 12, letterSpacing: 1 }}>
+              Sistem Absensi Dapur
             </p>
           </div>
         </div>

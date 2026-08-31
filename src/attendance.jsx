@@ -1,4 +1,4 @@
-import { CheckCircle2, ImagePlus, LogIn, LogOut, UserPlus, X } from "lucide-react";
+import { CheckCircle2, ImagePlus, Info, LogIn, LogOut, UserPlus, X } from "lucide-react";
 import { COLORS, OUTLETS } from "./constants";
 import { Section } from "./components";
 
@@ -49,6 +49,7 @@ export function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, 
   const grouped = OUTLETS.map((o) => ({ outlet: o, list: chefs.filter((c) => c.outlet === o) })).filter((g) => g.list.length > 0);
   const selectedChef = chefs.find((c) => c.id === absChefId);
   const canSubmit = chefs.length > 0 && !absBusy;
+  const needsPhoto = absTipe === "Masuk";
 
   function clearFoto() {
     setAbsFoto("");
@@ -86,34 +87,50 @@ export function AbsenTab({ chefs, absChefId, setAbsChefId, absTipe, setAbsTipe, 
               const Icon = t.icon;
               const active = absTipe === t.v;
               return (
-                <button type="button" key={t.v} onClick={() => setAbsTipe(t.v)} className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1" style={{ background: active ? COLORS.amber : COLORS.cream, color: COLORS.espresso, border: `1px solid ${active ? COLORS.amber : COLORS.line}` }}>
+                <button
+                  type="button"
+                  key={t.v}
+                  onClick={() => {
+                    setAbsTipe(t.v);
+                    if (t.v === "Pulang") clearFoto();
+                  }}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1"
+                  style={{ background: active ? COLORS.amber : COLORS.cream, color: COLORS.espresso, border: `1px solid ${active ? COLORS.amber : COLORS.line}` }}
+                >
                   <Icon size={14} /> {t.v}
                 </button>
               );
             })}
           </div>
         </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: COLORS.muted }}>Foto Bukti Kehadiran</label>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFoto} className="hidden" id="foto-input" />
-          {!absFoto ? (
-            <label htmlFor="foto-input" className="mt-1 w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl text-sm cursor-pointer" style={{ border: `2px dashed ${COLORS.line}`, color: COLORS.muted, background: COLORS.cream }}>
-              <ImagePlus size={24} />
-              <span className="font-semibold">{absBusy ? "Memproses foto..." : "Ambil / Upload Foto"}</span>
-              <span className="text-xs">Gunakan kamera belakang agar foto lebih jelas.</span>
-            </label>
-          ) : (
-            <div className="mt-1 flex items-center gap-3">
-              <div className="relative w-28 h-28">
-                <img src={absFoto} alt="preview" className="w-28 h-28 object-cover rounded-xl" style={{ border: `1px solid ${COLORS.line}` }} />
-                <button type="button" onClick={clearFoto} className="absolute -top-2 -right-2 rounded-full p-1" style={{ background: COLORS.chili, color: "white" }}>
-                  <X size={14} />
-                </button>
+        {needsPhoto ? (
+          <div>
+            <label className="text-xs font-semibold" style={{ color: COLORS.muted }}>Foto Bukti Kehadiran</label>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFoto} className="hidden" id="foto-input" />
+            {!absFoto ? (
+              <label htmlFor="foto-input" className="mt-1 w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl text-sm cursor-pointer" style={{ border: `2px dashed ${COLORS.line}`, color: COLORS.muted, background: COLORS.cream }}>
+                <ImagePlus size={24} />
+                <span className="font-semibold">{absBusy ? "Memproses foto..." : "Ambil / Upload Foto"}</span>
+                <span className="text-xs">Foto hanya diperlukan untuk absen masuk.</span>
+              </label>
+            ) : (
+              <div className="mt-1 flex items-center gap-3">
+                <div className="relative w-28 h-28">
+                  <img src={absFoto} alt="preview" className="w-28 h-28 object-cover rounded-xl" style={{ border: `1px solid ${COLORS.line}` }} />
+                  <button type="button" onClick={clearFoto} className="absolute -top-2 -right-2 rounded-full p-1" style={{ background: COLORS.chili, color: "white" }}>
+                    <X size={14} />
+                  </button>
+                </div>
+                <p className="text-xs" style={{ color: COLORS.muted }}>Foto siap dikirim. Jika kurang jelas, hapus lalu ambil ulang.</p>
               </div>
-              <p className="text-xs" style={{ color: COLORS.muted }}>Foto siap dikirim. Jika kurang jelas, hapus lalu ambil ulang.</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex gap-2 rounded-xl p-3 text-xs" style={{ background: COLORS.cream, color: COLORS.muted }}>
+            <Info size={15} className="flex-shrink-0 mt-0.5" />
+            <span>Absen pulang tidak memerlukan foto. Pastikan nama chef sudah benar sebelum mengirim.</span>
+          </div>
+        )}
         <button type="submit" disabled={!canSubmit} className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ background: COLORS.espresso, color: COLORS.cream, opacity: canSubmit ? 1 : 0.5 }}>
           <CheckCircle2 size={16} /> Catat Absen {absTipe}
         </button>

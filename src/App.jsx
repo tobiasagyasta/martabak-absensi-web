@@ -97,9 +97,15 @@ export default function App() {
   async function handleFoto(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const chef = chefs.find((c) => c.id === absChefId);
     setAbsBusy(true);
     try {
-      const dataUrl = await compressImage(file);
+      const dataUrl = await compressImage(file, {
+        stamp: {
+          type: absTipe,
+          outlet: chef?.outlet,
+        },
+      });
       setAbsFoto(dataUrl);
     } catch (err) {
       console.error(err);
@@ -115,8 +121,8 @@ export default function App() {
       setToast("Pilih chef terlebih dahulu");
       return;
     }
-    if (!absFoto) {
-      setToast("Foto wajib diupload untuk absen");
+    if (absTipe === "Masuk" && !absFoto) {
+      setToast("Foto wajib diupload untuk absen masuk");
       return;
     }
 
@@ -132,7 +138,7 @@ export default function App() {
         tanggalKey: fmtTanggalKey(now),
         jam: fmtJam(now),
         tipe: absTipe,
-        foto: absFoto,
+        foto: absTipe === "Masuk" ? absFoto : "",
         waktuSort: now.getTime(),
       });
       setAbsFoto("");

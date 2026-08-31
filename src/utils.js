@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 
-export function compressImage(file, maxWidth = 480, quality = 0.62) {
+export function compressImage(file, { maxWidth = 720, quality = 0.7, stamp = {} } = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -12,6 +12,7 @@ export function compressImage(file, maxWidth = 480, quality = 0.62) {
         canvas.height = Math.round(img.height * scale);
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        drawTimestampStamp(ctx, canvas, stamp);
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.onerror = reject;
@@ -20,6 +21,34 @@ export function compressImage(file, maxWidth = 480, quality = 0.62) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function drawTimestampStamp(ctx, canvas, stamp) {
+  const now = stamp.date || new Date();
+  const tanggal = fmtTanggal(now);
+  const jam = fmtJam(now);
+  const type = stamp.type || "Masuk";
+  const outlet = stamp.outlet || "Martabak Pecenongan 78";
+  const title = `ABSEN ${type.toUpperCase()} · ${outlet}`;
+  const detail = `${tanggal} · ${jam} WIB`;
+  const padding = Math.max(12, Math.round(canvas.width * 0.028));
+  const titleSize = Math.max(15, Math.round(canvas.width * 0.036));
+  const detailSize = Math.max(12, Math.round(canvas.width * 0.03));
+  const gap = Math.max(5, Math.round(canvas.width * 0.012));
+  const boxHeight = padding * 2 + titleSize + detailSize + gap;
+  const y = canvas.height - boxHeight;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(36, 26, 18, 0.78)";
+  ctx.fillRect(0, y, canvas.width, boxHeight);
+  ctx.fillStyle = "#F2C94C";
+  ctx.font = `700 ${titleSize}px Arial, sans-serif`;
+  ctx.textBaseline = "top";
+  ctx.fillText(title, padding, y + padding, canvas.width - padding * 2);
+  ctx.fillStyle = "#FBF3E7";
+  ctx.font = `600 ${detailSize}px Arial, sans-serif`;
+  ctx.fillText(detail, padding, y + padding + titleSize + gap, canvas.width - padding * 2);
+  ctx.restore();
 }
 
 export function fmtTanggal(d) {
