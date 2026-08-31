@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, UserPlus } from "lucide-react";
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { AbsenTab, DaftarTab } from "./attendance";
 import { AppShell, PublicTabs } from "./components";
@@ -12,6 +12,8 @@ const PUBLIC_TABS = [
   { key: "absen", label: "Absen", icon: Camera },
   { key: "daftar", label: "Daftar Chef", icon: UserPlus },
 ];
+
+const DASHBOARD_ABSENSI_LIMIT = 100;
 
 export default function App() {
   const isDashboardPage = window.location.pathname === "/dashboard";
@@ -42,6 +44,11 @@ export default function App() {
   );
 
   useEffect(() => {
+    const todayKey = fmtTanggalKey(new Date());
+    const absensiQuery = isDashboardPage
+      ? query(collection(db, "absensi"), orderBy("waktuSort", "desc"), limit(DASHBOARD_ABSENSI_LIMIT))
+      : query(collection(db, "absensi"), where("tanggalKey", "==", todayKey), orderBy("waktuSort", "desc"));
+
     const unsubChefs = onSnapshot(
       query(collection(db, "chefs"), orderBy("tanggalDaftarSort", "desc")),
       (snap) => {
@@ -51,7 +58,7 @@ export default function App() {
       (err) => console.error("chefs listener error:", err)
     );
     const unsubAbsensi = onSnapshot(
-      query(collection(db, "absensi"), orderBy("waktuSort", "desc")),
+      absensiQuery,
       (snap) => setAbsensi(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
       (err) => console.error("absensi listener error:", err)
     );
@@ -59,7 +66,7 @@ export default function App() {
       unsubChefs();
       unsubAbsensi();
     };
-  }, []);
+  }, [isDashboardPage]);
 
   useEffect(() => {
     if (!toast) return;
