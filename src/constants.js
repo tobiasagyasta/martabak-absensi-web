@@ -25,6 +25,3 @@ export const COLORS = {
   muted: "#8A7A68",
   line: "#E7DCC8",
 };
-
-export const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || "1234";
-export const DASHBOARD_SESSION_KEY = "martabak-dashboard-access";

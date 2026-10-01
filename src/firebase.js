@@ -2,6 +2,7 @@
 // Cara ambil: Firebase Console -> Project Settings -> General -> "Your apps" -> SDK setup and configuration
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -15,5 +16,6 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const analytics = getAnalytics(app);

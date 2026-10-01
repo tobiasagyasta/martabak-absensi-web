@@ -1,6 +1,6 @@
 import { COLORS } from "./constants";
 
-export function AppShell({ children, isDashboardPage, toast }) {
+export function AppShell({ children, isDashboardPage, toast, partnerUser, logoutDashboard }) {
   return (
     <div
       style={{
@@ -12,7 +12,7 @@ export function AppShell({ children, isDashboardPage, toast }) {
       }}
     >
       <GlobalStyles />
-      <Header />
+      <Header isDashboardPage={isDashboardPage} partnerUser={partnerUser} logoutDashboard={logoutDashboard} />
       <main className={`${isDashboardPage ? "max-w-3xl" : "max-w-md"} mx-auto px-4 mt-4`}>{children}</main>
       {toast && <Toast message={toast} />}
     </div>
@@ -37,11 +37,12 @@ function GlobalStyles() {
   );
 }
 
-function Header() {
+function Header({ isDashboardPage, partnerUser, logoutDashboard }) {
   return (
     <div style={{ background: COLORS.espresso }} className="px-4 pt-6 pb-4">
-      <div className="max-w-md mx-auto">
-        <div className="flex items-center gap-3">
+      <div className={`${isDashboardPage ? "max-w-3xl" : "max-w-md"} mx-auto`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
           <div className="w-28 h-14 rounded-2xl overflow-hidden flex-shrink-0" style={{ background: COLORS.cream, border: `2px solid ${COLORS.amber}` }}>
             <img src="/mp78-logo.jpeg" alt="Martabak Pecenongan 78" className="w-full h-full object-contain" />
           </div>
@@ -49,6 +50,38 @@ function Header() {
             <p className="mono-font uppercase font-semibold" style={{ color: COLORS.amber, fontSize: 12, letterSpacing: 1 }}>
               Sistem Absensi Dapur
             </p>
+          </div>
+          </div>
+          <div className="flex gap-2">
+            {isDashboardPage ? (
+              <>
+                <a
+                  href="/"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
+                  style={{ border: `1px solid ${COLORS.amber}`, color: COLORS.cream }}
+                >
+                  Home
+                </a>
+                {partnerUser && (
+                  <button
+                    type="button"
+                    onClick={logoutDashboard}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
+                    style={{ background: COLORS.amber, color: COLORS.espresso }}
+                  >
+                    Logout
+                  </button>
+                )}
+              </>
+            ) : (
+              <a
+                href="/dashboard"
+                className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
+                style={{ background: COLORS.amber, color: COLORS.espresso }}
+              >
+                Login Dashboard
+              </a>
+            )}
           </div>
         </div>
       </div>

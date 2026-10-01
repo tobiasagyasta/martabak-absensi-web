@@ -72,7 +72,7 @@ export function fmtJam(d) {
   });
 }
 
-export function exportAbsensiExcel({ filtered, chefs, todayKey }) {
+export function exportAbsensiExcel({ filtered, chefs, startDate, endDate }) {
   const rowsAbsen = filtered.map((r, i) => ({
     No: i + 1,
     "Nama Chef": r.namaChef,
@@ -92,5 +92,6 @@ export function exportAbsensiExcel({ filtered, chefs, todayKey }) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rowsAbsen), "Absensi");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rowsChef), "Data Chef");
-  XLSX.writeFile(wb, `Absensi_Martabak78_${todayKey}.xlsx`);
+  const suffix = startDate === endDate ? startDate : `${startDate}_sd_${endDate}`;
+  XLSX.writeFile(wb, `Absensi_Martabak78_${suffix}.xlsx`);
 }

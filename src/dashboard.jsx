@@ -10,14 +10,18 @@ import {
 import { COLORS, OUTLETS } from "./constants";
 import { Section } from "./components";
 
-export function DashboardGate({
-  dashboardPin,
-  setDashboardPin,
-  unlockDashboard,
+export function DashboardLogin({
+  loginEmail,
+  setLoginEmail,
+  loginPassword,
+  setLoginPassword,
+  loginBusy,
+  loginError,
+  handlePartnerLogin,
 }) {
   return (
     <div
-      className="rounded-3xl p-5 shadow-sm"
+      className="rounded-3xl p-5 sm:p-7 shadow-sm max-w-md mx-auto"
       style={{ background: "white", border: `1px solid ${COLORS.line}` }}
     >
       <div className="flex items-center gap-3 mb-5">
@@ -38,38 +42,67 @@ export function DashboardGate({
             className="display-font font-bold"
             style={{ fontSize: 22, color: COLORS.ink }}
           >
-            Dashboard Admin
+            Login Partner
           </h2>
         </div>
       </div>
       <p className="text-sm mb-4" style={{ color: COLORS.muted }}>
-        Masukkan PIN sementara untuk melihat rekap absensi.
+        Masuk dengan akun partner untuk melihat rekap absensi.
       </p>
-      <form onSubmit={unlockDashboard} className="space-y-3">
+      <form onSubmit={handlePartnerLogin} className="space-y-3">
         <div>
           <label
             className="text-xs font-semibold"
             style={{ color: COLORS.muted }}
           >
-            PIN Dashboard
+            Email
           </label>
           <input
-            value={dashboardPin}
-            onChange={(e) => setDashboardPin(e.target.value)}
-            type="password"
-            inputMode="numeric"
-            autoComplete="current-password"
-            placeholder="Masukkan PIN"
+            value={loginEmail}
+            onChange={(e) => setLoginEmail(e.target.value)}
+            type="email"
+            autoComplete="email"
+            placeholder="partner@email.com"
             className="w-full mt-1 px-3 py-3 rounded-xl text-sm"
             style={{ border: `1px solid ${COLORS.line}` }}
+            disabled={loginBusy}
+            required
           />
         </div>
+        <div>
+          <label
+            className="text-xs font-semibold"
+            style={{ color: COLORS.muted }}
+          >
+            Password
+          </label>
+          <input
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+            type="password"
+            autoComplete="current-password"
+            placeholder="Masukkan password"
+            className="w-full mt-1 px-3 py-3 rounded-xl text-sm"
+            style={{ border: `1px solid ${COLORS.line}` }}
+            disabled={loginBusy}
+            required
+          />
+        </div>
+        {loginError && (
+          <p
+            className="rounded-xl px-3 py-2 text-xs font-semibold"
+            style={{ background: "#FCEBE7", color: COLORS.chili }}
+          >
+            {loginError}
+          </p>
+        )}
         <button
           type="submit"
-          className="w-full py-3 rounded-xl font-semibold text-sm"
+          disabled={loginBusy}
+          className="w-full py-3 rounded-xl font-semibold text-sm disabled:opacity-70"
           style={{ background: COLORS.espresso, color: COLORS.cream }}
         >
-          Masuk Dashboard
+          {loginBusy ? "Memproses..." : "Masuk Dashboard"}
         </button>
         <a
           href="/"
@@ -92,37 +125,33 @@ export function DashboardTab({
   fTanggal,
   setFTanggal,
   exportExcel,
+  exportStartDate,
+  setExportStartDate,
+  exportEndDate,
+  setExportEndDate,
+  showExportRange,
+  setShowExportRange,
+  downloadExcelForRange,
+  exportBusy,
   hadirHariIni,
   confirmDelId,
   setConfirmDelId,
   deleteRecord,
-  lockDashboard,
+  partnerUser,
+  partnerProfile,
+  dashboardOutlets,
 }) {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <Section eyebrow="Ringkasan" title="Dashboard Absensi" />
-        <div className="flex gap-2">
-          <a
-            href="/"
-            className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
-            style={{
-              border: `1px solid ${COLORS.line}`,
-              color: COLORS.muted,
-              background: "white",
-            }}
-          >
-            Halaman Absen
-          </a>
-          <button
-            onClick={lockDashboard}
-            className="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap"
-            style={{ background: COLORS.espresso, color: COLORS.cream }}
-          >
-            Kunci
-          </button>
-        </div>
       </div>
+      {(partnerProfile?.name || partnerUser?.email) && (
+        <p className="text-xs mb-4" style={{ color: COLORS.muted }}>
+          Login sebagai {partnerProfile?.name || partnerUser.email}
+          {partnerProfile?.email ? ` (${partnerProfile.email})` : ""}
+        </p>
+      )}
       <div className="grid grid-cols-3 gap-2 mb-4">
         {[
           { label: "Chef Terdaftar", val: chefs.length },
@@ -148,8 +177,13 @@ export function DashboardTab({
         className="rounded-2xl p-3 mb-4"
         style={{ background: "white", border: `1px solid ${COLORS.line}` }}
       >
+        {dashboardOutlets.length === 0 && (
+          <p className="text-xs mb-2" style={{ color: COLORS.chili }}>
+            Partner ini belum memiliki outlet yang ditugaskan.
+          </p>
+        )}
         <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
-          {["Semua", ...OUTLETS].map((o) => (
+          {["Semua", ...dashboardOutlets].map((o) => (
             <button
               key={o}
               onClick={() => setFOutlet(o)}
@@ -172,7 +206,7 @@ export function DashboardTab({
             className="flex-1 px-3 py-2 rounded-xl text-sm"
             style={{ border: `1px solid ${COLORS.line}`, background: "white" }}
           />
-          {fTanggal && (
+          {fTanggal !== "" && (
             <button
               onClick={() => setFTanggal("")}
               className="px-3 rounded-xl text-xs font-semibold"
@@ -191,8 +225,63 @@ export function DashboardTab({
         className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 mb-4"
         style={{ background: COLORS.chili, color: "white" }}
       >
-        <Download size={16} /> Download Excel ({filtered.length} data)
+        <Download size={16} /> Download Excel
       </button>
+      {showExportRange && (
+        <form
+          onSubmit={downloadExcelForRange}
+          className="rounded-2xl p-3 mb-4 space-y-3"
+          style={{ background: "white", border: `1px solid ${COLORS.line}` }}
+        >
+          <p className="text-xs font-semibold" style={{ color: COLORS.muted }}>
+            Pilih rentang tanggal untuk file Excel. Tanggal awal dan akhir ikut dihitung.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-2">
+            <label className="text-xs font-semibold" style={{ color: COLORS.muted }}>
+              Dari tanggal
+              <input
+                type="date"
+                value={exportStartDate}
+                onChange={(e) => setExportStartDate(e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-xl text-sm"
+                style={{ border: `1px solid ${COLORS.line}`, background: "white" }}
+                required
+              />
+            </label>
+            <label className="text-xs font-semibold" style={{ color: COLORS.muted }}>
+              Sampai tanggal
+              <input
+                type="date"
+                value={exportEndDate}
+                onChange={(e) => setExportEndDate(e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-xl text-sm"
+                style={{ border: `1px solid ${COLORS.line}`, background: "white" }}
+                required
+              />
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={exportBusy}
+              className="flex-1 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-70 flex items-center justify-center gap-2"
+              style={{ background: COLORS.espresso, color: COLORS.cream }}
+            >
+              {exportBusy && <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />}
+              {exportBusy ? "Menyiapkan Excel..." : "Download Rentang Ini"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowExportRange(false)}
+              disabled={exportBusy}
+              className="px-3 rounded-xl text-xs font-semibold"
+              style={{ border: `1px solid ${COLORS.line}`, color: COLORS.muted }}
+            >
+              Batal
+            </button>
+          </div>
+        </form>
+      )}
       <AttendanceList
         filtered={filtered}
         confirmDelId={confirmDelId}
